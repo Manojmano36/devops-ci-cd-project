@@ -35,28 +35,31 @@ pipeline {
         }
 
         stage('Update K8s Manifest & Push to Git') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'github-token',
-                    usernameVariable: 'GIT_USERNAME',
-                    passwordVariable: 'GIT_PASSWORD'
-                )]) {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'github-token',
+            usernameVariable: 'GIT_USERNAME',
+            passwordVariable: 'GIT_PASSWORD'
+        )]) {
 
-                    sh '''
-                    git config --global user.email "jenkins@devops.com"
-                    git config --global user.name "Jenkins"
+            sh '''
+            git config --global user.email "jenkins@devops.com"
+            git config --global user.name "Jenkins"
 
-                    git checkout main
+            git checkout main
+            
+            git pull https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Manojmano36/devops-ci-cd-project.git main --rebase
 
-                    sed -i "s#${IMAGE}:.*#${IMAGE}:${BUILD_NUMBER}#g" k8s/deployment.yaml
+            sed -i "s#${IMAGE}:.*#${IMAGE}:${BUILD_NUMBER}#g" k8s/deployment.yaml
 
-                    git add k8s/deployment.yaml
-                    git commit -m "Deploy build ${BUILD_NUMBER}"
-                    git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Manojmano36/devops-ci-cd-project.git main
-                    '''
-                }
-            }
+            git add k8s/deployment.yaml
+            git commit -m "Deploy build ${BUILD_NUMBER}"
+
+            git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Manojmano36/devops-ci-cd-project.git main
+            '''
         }
+    }
+}
 
     }
 }
