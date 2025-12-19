@@ -9,6 +9,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 checkout scm
@@ -27,17 +28,24 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t ${IMAGE}:v1 .
+                docker build -t ${IMAGE}:${BUILD_NUMBER} .
+                docker push ${IMAGE}:${BUILD_NUMBER}
                 '''
             }
         }
 
-        stage('Push Image to ECR') {
+        stage('Update K8s Manifest') {
             steps {
                 sh '''
-                docker push ${IMAGE}:v1
+                sed -i "s#${IMAGE}:.*#${IMAGE}:${BUILD_NUMBER}#g" k8s/deployment.yaml
+                git config --global user.email "jenkins@devops.com"
+                git config --global user.name "Jenkins"
+                git add .
+                git commit -m "Deploy build ${BUILD_NUMBER}"
+                git push origin main
                 '''
             }
         }
     }
 }
+
